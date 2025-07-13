@@ -1,10 +1,69 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import {
+  AppBar, Toolbar, Typography, Box, Button, Container, Card, CardContent
+} from '@mui/material';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
 
-export default function Home() {
+const bannerImages = ['/banner1.png', '/banner2.png', '/banner3.png'];
+
+export default function HomePage() {
   return (
-    <div className={styles.page}>
-    <h1>Homepage</h1>
-    </div>
+    <Box>
+      {/* AppBar */}
+      <AppBar position="static" color="default" elevation={1}>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.png" alt="logo" style={{ width: 80, marginRight: 8 }} />
+            <Typography variant="h6">IELTSMate</Typography>
+          </Box>
+          <Box>
+            <Button color="inherit">About</Button>
+            <Button color="inherit">Practice</Button>
+            <Button color="inherit">Contact</Button>
+            <Button variant="outlined">Log In</Button>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Swiper Banner */}
+      <Box sx={{ mt: 2 }}>
+        <Swiper
+          modules={[Navigation, Autoplay]}
+          navigation
+          autoplay={{ delay: 3000 }}
+          loop
+          style={{ width: '60%', height: '20%' }}
+        >
+          {bannerImages.map((src, index) => (
+            <SwiperSlide key={index}>
+              <img
+                src={src}
+                alt={`banner ${index}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </Box>
+
+      {/* Cards: Notice, News, QnA */}
+      <Container sx={{ mt: 5, display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {[
+          { title: 'Notice', content: 'New Materials Updated ' },
+          { title: 'News', content: 'IELTS One Skill Retake' },
+          { title: 'QnA', content: 'How to reach to my goal' },
+        ].map(({ title, content }, index) => (
+          <Card key={index} sx={{ width: 280 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>{title}</Typography>
+              <Typography variant="body2">{content}</Typography>
+            </CardContent>
+          </Card>
+        ))}
+      </Container>
+    </Box>
   );
 }
