@@ -11,23 +11,7 @@ const bannerImages = ['/banner1.png', '/banner2.png', '/banner3.png'];
 
 export default function HomePage() {
   return (
-    <Box>
-      {/* AppBar */}
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.png" alt="logo" style={{ width: 80, marginRight: 8 }} />
-            <Typography variant="h6">IELTSMate</Typography>
-          </Box>
-          <Box>
-            <Button color="inherit">About</Button>
-            <Button color="inherit">Practice</Button>
-            <Button color="inherit">Contact</Button>
-            <Button variant="outlined">Log In</Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
+    <Box> 
       {/* Swiper Banner */}
       <Box sx={{ mt: 2 }}>
         <Swiper
