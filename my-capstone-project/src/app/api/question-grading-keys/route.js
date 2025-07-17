@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongoose";
-import { QuestionGradingKey } from "@/app/models/QuestionGradingKey";
+import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
 
 export async function GET() {
   await connectToDatabase();

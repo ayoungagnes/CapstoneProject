@@ -1,48 +1,50 @@
-"use client";
-import { Button, Menu, MenuItem, Link } from "@mui/material";
-import React from "react";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardActionArea, Typography, Grid, Box } from '@mui/material';
+import Link from 'next/link';
 
 export default function readingPage() {
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const [materials, setMaterials] = useState([]);
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      const res = await fetch('/api/question-materials');
+      const data = await res.json();
+      setMaterials(data);
+    };
+    fetchMaterials();
+  }, []);
+
   return (
-    <>
-      <h1>Reading page!</h1>
-      <Button
-        id="basic-button"
-        aria-controls={open ? "basic-menu" : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? "true" : undefined}
-        onClick={handleClick}
-        onMouseEnter={handleClick}
-      >
-        Practice
-      </Button>
-      <Menu
-        id="basic-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        onMouseLeave={handleClose}
-        slotProps={{
-          list: {
-            "aria-labelledby": "basic-button",
-          },
-        }}
-      >
-        <MenuItem>
-          <Link href="/practice/writing">Writing</Link>
-        </MenuItem>
-        <MenuItem>
-          <Link href="/practice/reading">Reading</Link>
-        </MenuItem>
-      </Menu>
-    </>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        IELTS Mock Test 2025
+      </Typography>
+
+      <Grid container spacing={3}>
+        {materials.map((material) => (
+          <Grid item xs={12} sm={6} md={4} key={material._id}>
+            <Card elevation={3}>
+              <Link href={`/reading/${material._id}`} passHref legacyBehavior>
+                <CardActionArea component="a">
+                  <CardContent>
+                    <Typography variant="h6" component="div">
+                      {material.title}
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                      {material.type === 'reading' ? 'Reading Section' : material.type}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      0 tests taken
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Link>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
 }
