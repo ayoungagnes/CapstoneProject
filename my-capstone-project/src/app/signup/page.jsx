@@ -29,14 +29,39 @@ export default function SignupPage() {
   const handleToggleConfirm = () => setShowConfirmPassword((prev) => !prev);
   const handleMouseDown = (event) => event.preventDefault();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // TODO: Add signup logic and validation
+
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
-    console.log("Signing up", { name, email, password });
+
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      alert("Account created! Please log in.");
+      // optionally redirect:
+      // router.push("/login");
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (

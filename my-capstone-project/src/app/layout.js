@@ -1,19 +1,22 @@
-import './globals.css';
-import EmotionRegistry from './EmotionRegistry';
-import CustomAppBar from './components/customAppBar';
+import "./globals.css";
+import EmotionRegistry from "./EmotionRegistry";
+import CustomAppBar from "./components/customAppBar";
+import ClientSessionProvider from "./components/ClientSessionProvider";
 
 export const metadata = {
-  title: 'IELTS Mate'
+  title: "IELTS Mate",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <EmotionRegistry>
+        <ClientSessionProvider>
+          <EmotionRegistry>
             <CustomAppBar />
             {children}
-        </EmotionRegistry>
+          </EmotionRegistry>
+        </ClientSessionProvider>
       </body>
     </html>
   );
