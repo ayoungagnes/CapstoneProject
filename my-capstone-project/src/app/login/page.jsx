@@ -16,11 +16,14 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Link from "next/link";
+import {useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
@@ -30,11 +33,21 @@ export default function LoginPage() {
     event.preventDefault();
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    // TODO: Add authentication logic here
-    console.log("Logging in with", { email, password });
-  };
+const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  const result = await signIn("credentials", {
+    redirect: false,
+    email,
+    password,
+  });
+
+  if (result.ok) {
+    router.push("/");
+  } else {
+    alert("Login failed: " + result.error);
+  }
+};
 
   return (
     <Box

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
@@ -28,6 +29,7 @@ export default function SignupPage() {
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
   const handleToggleConfirm = () => setShowConfirmPassword((prev) => !prev);
   const handleMouseDown = (event) => event.preventDefault();
+  const router = useRouter();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -57,8 +59,7 @@ export default function SignupPage() {
       }
 
       alert("Account created! Please log in.");
-      // optionally redirect:
-      // router.push("/login");
+      router.push("/login");
     } catch (err) {
       alert(err.message);
     }
