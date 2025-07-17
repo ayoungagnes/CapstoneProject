@@ -43,96 +43,100 @@ export default function SignupPage() {
     <Box
       component={Paper}
       elevation={3}
-
-      onSubmit={handleSubmit}
       sx={{
         width: 360,
         mx: "auto",
         mt: 8,
         p: 4,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
         borderRadius: 2,
       }}
     >
-      <Typography variant="h5" align="center">
-        Sign Up
-      </Typography>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <Typography variant="h5" align="center">
+          Sign Up
+        </Typography>
 
-      <TextField
-        label="Name"
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-        fullWidth
-      />
-
-      <TextField
-        label="Email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        fullWidth
-      />
-
-      <FormControl variant="outlined" fullWidth required>
-        <InputLabel htmlFor="signup-password">Password</InputLabel>
-        <OutlinedInput
-          id="signup-password"
-          type={showPassword ? "text" : "password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                onClick={handleTogglePassword}
-                onMouseDown={handleMouseDown}
-                edge="end"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          label="Password"
+        <TextField
+          label="Name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          fullWidth
         />
-      </FormControl>
 
-      <FormControl variant="outlined" fullWidth required>
-        <InputLabel htmlFor="signup-confirm-password">
-          Confirm Password
-        </InputLabel>
-        <OutlinedInput
-          id="signup-confirm-password"
-          type={showConfirmPassword ? "text" : "password"}
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                onClick={handleToggleConfirm}
-                onMouseDown={handleMouseDown}
-                edge="end"
-                aria-label={
-                  showConfirmPassword ? "Hide password" : "Show password"
-                }
-              >
-                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          label="Confirm Password"
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          fullWidth
         />
-      </FormControl>
 
-      <Button type="submit" variant="contained" size="large">
-        Create Account
-      </Button>
+        <FormControl variant="outlined" fullWidth required>
+          <InputLabel htmlFor="signup-password">Password</InputLabel>
+          <OutlinedInput
+            id="signup-password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            endAdornment={
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={handleTogglePassword}
+                  onMouseDown={handleMouseDown}
+                  edge="end"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            }
+            label="Password"
+          />
+        </FormControl>
 
-      <Typography variant="body2" align="center">
+        <FormControl variant="outlined" fullWidth required>
+          <InputLabel htmlFor="signup-confirm-password">
+            Confirm Password
+          </InputLabel>
+          <OutlinedInput
+            id="signup-confirm-password"
+            type={showConfirmPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            endAdornment={
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={handleToggleConfirm}
+                  onMouseDown={handleMouseDown}
+                  edge="end"
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            }
+            label="Confirm Password"
+          />
+        </FormControl>
+
+        <Button type="submit" variant="contained" size="large">
+          Create Account
+        </Button>
+      </form>
+
+      <Typography variant="body2" align="center" sx={{ mt: 2 }}>
         Already have an account?{" "}
         <MuiLink component={Link} href="/login">
           Log In
