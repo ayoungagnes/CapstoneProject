@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongoose";
 import { QuestionMaterial } from "@/app/lib/models/QuestionMaterial";
 
-export async function GET() {
+export async function GET(req) {
   await connectToDatabase();
+  const { searchParams } = new URL(req.url);
+  const page  = parseInt(searchParams.get("page")  || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "20", 10);
 
-  const materials = await QuestionMaterial.find().lean();
+  const materials = await QuestionMaterial
+    .find({}, "title section subtitle")  // just card fields
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean();
+
   return NextResponse.json(materials);
 }
 

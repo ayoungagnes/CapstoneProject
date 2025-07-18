@@ -18,4 +18,11 @@ const QuestionSchema = new Schema({
   },
 }, { timestamps: true });
 
+QuestionSchema.virtual("gradingKey", {
+  ref: "QuestionGradingKey",
+  localField: "_id",
+  foreignField: "questionId",
+  justOne: true,
+});
+
 export const Question = models.Question || model('Question', QuestionSchema);

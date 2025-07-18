@@ -25,4 +25,13 @@ const QuestionGroupSchema = new Schema({
   },
 }, { timestamps: true });
 
+QuestionGroupSchema.virtual("questions", {
+  ref: "Question",
+  localField: "_id",
+  foreignField: "questionGroup",
+});
+
+QuestionGroupSchema.set("toJSON", { virtuals: true });
+QuestionGroupSchema.set("toObject", { virtuals: true });
+
 export const QuestionGroup = models.QuestionGroup || model('QuestionGroup', QuestionGroupSchema);

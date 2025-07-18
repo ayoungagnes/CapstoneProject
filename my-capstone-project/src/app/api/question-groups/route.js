@@ -4,9 +4,28 @@ import { QuestionGroup } from "@/app/lib/models/QuestionGroup";
 import { Question } from "@/app/lib/models/Question";
 import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
 
-export async function GET() {
+export async function GET(req) {
   await connectToDatabase();
-  const groups = await QuestionGroup.find().populate("questionMaterial").lean();
+
+  // optional filter: ?material=<materialId>
+  const { searchParams } = new URL(req.url);
+  const materialId = searchParams.get("material");
+  const query = materialId ? { questionMaterial: materialId } : {};
+
+  const groups = await QuestionGroup
+    .find(query, "-__v")
+    .sort("order")
+    .populate({                     // material info for cards/lists
+      path: "questionMaterial",
+      select: "title subtitle",
+    })
+    .populate({                     // questions + grading key
+      path: "questions",
+      populate: { path: "gradingKey", select: "scoringType" },
+      select: "content questionGroup",
+    })
+    .lean();
+
   return NextResponse.json(groups);
 }
 
