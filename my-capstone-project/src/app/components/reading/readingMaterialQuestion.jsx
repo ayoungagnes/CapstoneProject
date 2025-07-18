@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
@@ -13,18 +14,33 @@ import {
   FormControlLabel,
   Radio,
   Button,
+  Alert,
 } from "@mui/material";
 
 export default function ReadingMaterialQuestion({ material, groups }) {
   const [answers, setAnswers] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // To prevent double clicks
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null); // State to hold submission errors
+  const router = useRouter();
 
   const handleChange = (qId, value) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
   };
 
+  // --- THIS IS THE UPDATED SUBMISSION HANDLER ---
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setError(null); // Clear previous errors
+
+    // 1. Extract the IDs from the full 'groups' array prop.
+    // This is the "snapshot" of the test structure.
+    const questionGroupIds = groups.map(group => group._id);
+
+    // 2. Construct the new payload with both the answers and the group IDs.
+    const payload = {
+      userAnswers: answers,
+      questionGroupIds: questionGroupIds,
+    };
 
     try {
       const response = await fetch("/api/practice/submit", {
@@ -32,24 +48,29 @@ export default function ReadingMaterialQuestion({ material, groups }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userAnswers: answers }),
+        // 3. Stringify the new, correct payload.
+        body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit answers.");
-      }
 
       const result = await response.json();
 
-      // --- Next Step ---
+      if (!response.ok) {
+        // If the API returns an error, display it to the user.
+        throw new Error(result.message || "Failed to submit answers.");
+      }
+
+      // 4. On success, redirect to the new results page.
       router.push(`/practice/results/${result.sessionId}`);
-    } catch (error) {
-      console.error(error);
+
+    } catch (err) {
+      console.error("Submission error:", err);
+      setError(err.message); // Set the error state to show an Alert
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // The rest of the component's JSX remains the same.
   return (
     <Box maxWidth="md" mx="auto" py={4}>
       <Typography variant="h4" gutterBottom>
@@ -80,6 +101,7 @@ export default function ReadingMaterialQuestion({ material, groups }) {
         ))}
       </Paper>
 
+      {/* This map correctly renders the question groups you receive as props */}
       {groups.map((group, i) => (
         <Box key={group._id} mb={4}>
           <Typography variant="h6" gutterBottom>
@@ -101,21 +123,9 @@ export default function ReadingMaterialQuestion({ material, groups }) {
                     value={answers[q._id] || ""}
                     onChange={(e) => handleChange(q._id, e.target.value)}
                   >
-                    <FormControlLabel
-                      value="TRUE"
-                      control={<Radio />}
-                      label="TRUE"
-                    />
-                    <FormControlLabel
-                      value="FALSE"
-                      control={<Radio />}
-                      label="FALSE"
-                    />
-                    <FormControlLabel
-                      value="NOT GIVEN"
-                      control={<Radio />}
-                      label="NOT GIVEN"
-                    />
+                    <FormControlLabel value="TRUE" control={<Radio />} label="TRUE" />
+                    <FormControlLabel value="FALSE" control={<Radio />} label="FALSE" />
+                    <FormControlLabel value="NOT GIVEN" control={<Radio />} label="NOT GIVEN" />
                   </RadioGroup>
                 ) : (
                   <TextField
@@ -129,10 +139,16 @@ export default function ReadingMaterialQuestion({ material, groups }) {
               </FormControl>
             </Box>
           ))}
-
           <Divider sx={{ my: 2 }} />
         </Box>
       ))}
+
+      {/* Display an error message if the submission fails */}
+      {error && (
+        <Alert severity="error" sx={{ my: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <Button
         variant="contained"

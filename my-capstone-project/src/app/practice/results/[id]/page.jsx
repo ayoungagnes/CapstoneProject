@@ -1,14 +1,12 @@
+"use client";
+
 import ResultsPage from "@/app/components/results/ResultsPage";
+import * as React from "react";
 
-//
-// THIS IS THE FIX: Explicitly tell Next.js to render this page dynamically
-//
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default function ResultsPageWrapper({ params }) {
-  // Now that the page is in the correct rendering mode,
-  // this access will work as expected.
-  const sessionId = params.id;
+export default function Page({ params }) {
+  const { id } = React.use(params);
 
-  return <ResultsPage sessionId={sessionId} />;
+  return <ResultsPage id={id} />;
 }
