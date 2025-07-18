@@ -22,7 +22,7 @@ export const authOptions = {
         if (!isPasswordValid) throw new Error("Invalid password");
 
         return {
-          id: user._id,
+          id: user._id.toString(),
           name: user.name,
           email: user.email,
         };
@@ -34,6 +34,21 @@ export const authOptions = {
   },
   session: {
     strategy: "jwt",
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    // Include user ID in session object
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id;
+      }
+      return session;
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

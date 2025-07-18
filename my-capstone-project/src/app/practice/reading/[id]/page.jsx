@@ -57,6 +57,5 @@ export default async function ReadingPageDetail({ params }) {
       updatedAt: q.updatedAt?.toISOString(),
     })),
   }));
-  console.log("mat", serializedMaterial)
   return <ReadingMaterialQuestion material={serializedMaterial} groups={serializedGroups} />;
 }

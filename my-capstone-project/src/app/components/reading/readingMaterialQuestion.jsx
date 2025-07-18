@@ -17,14 +17,37 @@ import {
 
 export default function ReadingMaterialQuestion({ material, groups }) {
   const [answers, setAnswers] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // To prevent double clicks
 
   const handleChange = (qId, value) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
   };
 
-  const handleSubmit = () => {
-    console.log("User answers:", answers);
-    // Send to backend or evaluate
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/practice/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userAnswers: answers }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit answers.");
+      }
+
+      const result = await response.json();
+
+      // --- Next Step ---
+      router.push(`/practice/results/${result.sessionId}`);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -111,8 +134,12 @@ export default function ReadingMaterialQuestion({ material, groups }) {
         </Box>
       ))}
 
-      <Button variant="contained" onClick={handleSubmit}>
-        Submit Answers
+      <Button
+        variant="contained"
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Submitting..." : "Submit Answers"}
       </Button>
     </Box>
   );
