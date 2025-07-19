@@ -1,0 +1,190 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+  Box,
+  Container,
+  CircularProgress,
+  Alert,
+  Paper,
+  Typography,
+} from "@mui/material";
+
+import ResultsHeader from "@/app/components/results/ResultHeader";
+import SummaryStatistics from "@/app/components/results/SummaryStatistics";
+import SessionsTable from "@/app/components/results/SessionsTable";
+import ResultsPagination from "@/app/components/results/ResultsPagination";
+
+export default function ResultsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+  });
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/api/auth/signin");
+    }
+  }, [status, router]);
+
+  // Fetch sessions
+  const fetchSessions = useCallback(
+    async (page = 1) => {
+      if (!session) return;
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: "10",
+          sortBy,
+          sortOrder,
+        });
+
+        const response = await fetch(`/api/practice/results?${params}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setSessions(data.sessions);
+        setPagination(data.pagination);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching sessions:", err);
+        setError("Failed to load practice results.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [session, sortBy, sortOrder]
+  );
+
+  useEffect(() => {
+    fetchSessions(1);
+  }, [fetchSessions]);
+
+  // Handle page change
+  const handlePageChange = (event, newPage) => {
+    fetchSessions(newPage);
+  };
+
+  // Handle sort change
+  const handleSortChange = (newSortBy) => {
+    const newSortOrder =
+      sortBy === newSortBy && sortOrder === "desc" ? "asc" : "desc";
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+  };
+
+  // Handle viewing a session's results
+  const handleViewResult = (id) => {
+    router.push(`/practice/results/${id}`);
+  };
+
+  // Handle deleting a session
+  const handleDeleteSession = async (id) => {
+    // User confirmation
+    if (!window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/practice/results/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete the session.");
+      }
+
+      // Refresh the list of sessions to reflect the deletion
+      fetchSessions(pagination.currentPage);
+    } catch (err) {
+      console.error("Deletion error:", err);
+      setError(err.message || "Could not delete the session.");
+    }
+  };
+
+  // Loading and authentication checks
+  if (status === "loading") {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (!session) {
+    return null; // Will be redirected
+  }
+
+  // Calculate average score safely
+  const averageScore =
+    sessions.length > 0
+      ? Math.round(
+          sessions.reduce((acc, s) => acc + (s.score || 0), 0) / sessions.length
+        )
+      : 0;
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <ResultsHeader />
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <SummaryStatistics
+        totalCount={pagination.totalCount}
+        averageScore={averageScore}
+      />
+
+      <Paper sx={{ width: "100%", mb: 2 }}>
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" component="h2">
+            Your Results ({pagination.totalCount})
+          </Typography>
+        </Box>
+
+        {loading && sessions.length === 0 ? (
+          <Box display="flex" justifyContent="center" py={10}>
+             <CircularProgress />
+          </Box>
+        ) : sessions.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No practice results found.
+            </Typography>
+          </Box>
+        ) : (
+          <SessionsTable
+            sessions={sessions}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+            onView={handleViewResult}
+            onDelete={handleDeleteSession}
+          />
+        )}
+      </Paper>
+      
+      <ResultsPagination
+        totalPages={pagination.totalPages}
+        currentPage={pagination.currentPage}
+        onPageChange={handlePageChange}
+      />
+    </Container>
+  );
+}
