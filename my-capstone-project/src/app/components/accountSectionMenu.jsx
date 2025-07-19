@@ -45,7 +45,7 @@ export default function AccountSection() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <MenuItem disabled>{session.user.name || session.user.email}</MenuItem>
-        <MenuItem>My Practice Session</MenuItem>
+        <MenuItem onClick={() => router.push("/practice/results")}>My Practice Session</MenuItem>
         <MenuItem onClick={handleLogout}>Log Out</MenuItem>
       </Menu>
     </>
