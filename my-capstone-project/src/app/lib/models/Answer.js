@@ -1,50 +1,55 @@
 import { Schema, model, models } from 'mongoose';
 
 const AnswerSchema = new Schema({
-  // The practice session this answer is a part of.
-  // This is the field used by the PracticeSession's virtual 'answers' property.
   practiceSession: {
     type: Schema.Types.ObjectId,
     ref: 'PracticeSession',
     required: true,
-    index: true, // Good for quickly finding all answers for a session.
+    index: true,
   },
-  // The specific question being answered.
   question: {
     type: Schema.Types.ObjectId,
-    ref: 'Question', // Assumes your Question model is named 'Question'
+    ref: 'Question',
     required: true,
   },
-  // The user who submitted the answer.
   user: {
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  // The actual content submitted by the user.
   content: {
     type: String,
     required: true,
   },
-  // Fields to store grading results.
+  // Repurposed for objective questions only
   is_correct: {
     type: Boolean,
   },
+  // Repurposed for the single, overall score (e.g., 1/0 for reading, 7.5 for writing)
   score: {
     type: Number,
   },
+  // Repurposed for a brief, top-level feedback string
   feedback: {
     type: String,
   },
-  // Explicitly storing the submission time as per the ERD.
   submitted_at: {
     type: Date,
     default: Date.now,
   },
 }, {
-  // Adds createdAt and updatedAt timestamps. `updatedAt` is useful if
-  // feedback is added or a score is adjusted later.
   timestamps: true,
 });
+
+// THE KEY ADDITION: Link to the detailed feedback document
+AnswerSchema.virtual("detailedFeedback", {
+  ref: "WritingFeedback", // The new model we will create
+  localField: "_id",
+  foreignField: "answer",
+  justOne: true, // Ensures it's a one-to-one link
+});
+
+AnswerSchema.set("toJSON", { virtuals: true });
+AnswerSchema.set("toObject", { virtuals: true });
 
 export const Answer = models.Answer || model('Answer', AnswerSchema);

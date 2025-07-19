@@ -1,4 +1,6 @@
 import { Question } from "@/app/lib/models/Question";
+import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
+import { getReadingBandScore } from "./ielts-bands";
 
 /**
  * Compares a user's answer with the correct answer based on question type.
@@ -8,7 +10,12 @@ import { Question } from "@/app/lib/models/Question";
  * @returns {boolean} True if the answer is correct, otherwise false.
  */
 export function compareAnswers(userAnswer, correctAnswer, questionType) {
-  if (userAnswer === null || correctAnswer === null || userAnswer === undefined || correctAnswer === undefined) {
+  if (
+    userAnswer === null ||
+    correctAnswer === null ||
+    userAnswer === undefined ||
+    correctAnswer === undefined
+  ) {
     return false;
   }
 
@@ -24,7 +31,9 @@ export function compareAnswers(userAnswer, correctAnswer, questionType) {
       const userLower = userStr.toLowerCase();
       const correctLower = correctStr.toLowerCase();
       if (correctLower.includes("|")) {
-        const acceptableAnswers = correctLower.split("|").map((ans) => ans.trim());
+        const acceptableAnswers = correctLower
+          .split("|")
+          .map((ans) => ans.trim());
         return acceptableAnswers.includes(userLower);
       }
       return userLower === correctLower;
@@ -41,35 +50,67 @@ export function compareAnswers(userAnswer, correctAnswer, questionType) {
  * @returns {Promise<{totalCorrect: number, totalQuestions: number, score: number}>}
  */
 export async function calculateSessionResults(practiceSession) {
-  // Ensure the nested 'gradingKey' is populated for accurate scoring.
-  if (practiceSession?.questionGroups) {
-    for (const group of practiceSession.questionGroups) {
-      if (group.questions?.length > 0 && !group.questions[0].gradingKey) {
-        await Question.populate(group.questions, { path: "gradingKey" });
+  // Populate necessary data
+  if (!practiceSession.answers) await practiceSession.populate('answers');
+  if (!practiceSession.questionGroups[0].questions) {
+    await practiceSession.populate({
+      path: "questionGroups",
+      populate: { path: "questions", model: "Question" },
+    });
+  }
+
+  const sectionScores = {
+    reading: { achieved: 0, total: 0, band: 0 },
+    writing: { achieved: 0, total: 0, band: 0 },
+  };
+
+  let totalQuestions = 0;
+
+  // --- START OF NEW LOGIC ---
+  for (const group of practiceSession.questionGroups) {
+    totalQuestions += group.questions.length;
+    const section = group.section; // 'reading' or 'writing'
+
+    if (section === 'reading') {
+      // For reading, we must compare answers to find the number of correct ones
+      await Question.populate(group.questions, { path: "gradingKey" });
+      sectionScores.reading.total += group.questions.length;
+      for (const question of group.questions) {
+        const userAnswer = practiceSession.answers.find(
+          (a) => a.question.toString() === question._id.toString()
+        );
+        if (compareAnswers(userAnswer?.content, question.gradingKey?.correctAnswer, group.questionType)) {
+          sectionScores.reading.achieved++;
+        }
       }
+    } else if (section === 'writing') {
+      // For writing, the score is already on the answer document
+      const writingAnswer = practiceSession.answers.find(
+        (a) => a.question.toString() === group.questions[0]._id.toString()
+      );
+      sectionScores.writing.band = writingAnswer?.score || 0;
+      sectionScores.writing.achieved = writingAnswer?.score || 0;
+      sectionScores.writing.total = group.questions[0].maxScore || 9;
     }
   }
 
-  const userAnswersMap = new Map(
-    practiceSession.answers.map((answer) => [answer.question.toString(), answer])
-  );
+  // Convert reading's raw score to a band score
+  if (sectionScores.reading.total > 0) {
+    sectionScores.reading.band = getReadingBandScore(sectionScores.reading.achieved);
+  }
 
-  let totalCorrect = 0;
-  let totalQuestions = 0;
+  // Calculate overall band score (average of the sections that were practiced)
+  const bandScores = Object.values(sectionScores).filter(s => s.total > 0).map(s => s.band);
+  const overallBandScore = bandScores.length > 0
+    ? (bandScores.reduce((a, b) => a + b, 0) / bandScores.length).toFixed(1)
+    : 0;
 
-  (practiceSession.questionGroups || []).forEach((group) => {
-    (group.questions || []).forEach((question) => {
-      totalQuestions++;
-      const userAnswer = userAnswersMap.get(question._id.toString());
-      const correctAnswer = question.gradingKey?.correctAnswer;
-      const userAnswerContent = userAnswer ? userAnswer.content : null;
-
-      if (compareAnswers(userAnswerContent, correctAnswer, group.questionType)) {
-        totalCorrect++;
-      }
-    });
-  });
-
-  const score = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-  return { totalCorrect, totalQuestions, score };
+  return {
+    overallBandScore: parseFloat(overallBandScore),
+    readingBandScore: sectionScores.reading.band,
+    writingBandScore: sectionScores.writing.band,
+    readingCorrect: sectionScores.reading.achieved,
+    readingTotal: sectionScores.reading.total,
+    totalQuestions,
+  };
 }
