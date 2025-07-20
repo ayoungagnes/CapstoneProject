@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectToDatabase } from "@/app/lib/mongoose";
 import { PracticeSession } from "@/app/lib/models/PracticeSession";
 import { calculateSessionResults } from "@/app/lib/practice/scoreUtils";
+import { Answer } from "@/app/lib/models/Answer";
+import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
 
 export async function GET(request) {
   try {
