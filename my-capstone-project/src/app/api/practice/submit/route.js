@@ -1,4 +1,3 @@
-// All imports remain the same
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -11,9 +10,7 @@ export async function POST(req) {
   await connectToDatabase();
 
   try {
-    // --- Authentication (No changes needed) ---
     const session = await getServerSession(authOptions);
-    console.log("--- SESSION OBJECT ---:", session);
     if (!session || !session.user) {
       return NextResponse.json(
         { message: "Not authenticated" },
@@ -21,7 +18,6 @@ export async function POST(req) {
       );
     }
     const userId = session.user.id || session.user._id || session.user.sub;
-     console.log("--- IDENTIFIED USER ID ---:", userId);
     if (!userId) {
       return NextResponse.json(
         { message: "User ID not found in session" },
@@ -29,11 +25,8 @@ export async function POST(req) {
       );
     }
 
-    // --- CHANGE 1: Update the expected request body ---
-    // We now expect both the answers AND the structure of the test.
     const { userAnswers, questionGroupIds } = await req.json();
 
-    // --- CHANGE 2: Add validation for the new required data ---
     if (
       !questionGroupIds ||
       !Array.isArray(questionGroupIds) ||
@@ -45,7 +38,6 @@ export async function POST(req) {
       );
     }
 
-    // User can submit a blank test, so we don't need to validate userAnswers as strictly.
     if (!userAnswers) {
       return NextResponse.json(
         { message: "userAnswers object is missing." },
@@ -53,19 +45,13 @@ export async function POST(req) {
       );
     }
 
-    // --- CHANGE 3: Create the Practice Session with the new required field ---
     const practiceSession = await PracticeSession.create({
       user: userId,
-      questionGroups: questionGroupIds, // <-- This is the new, crucial piece of data
+      questionGroups: questionGroupIds,
     });
 
-    // --- The rest of the logic remains the same! ---
-    // It correctly handles the case where a user submits an empty set of answers.
-
-    // --- Grade Each Answer Concurrently ---
     const answerProcessingPromises = Object.entries(userAnswers).map(
       async ([questionId, userAnswerContent]) => {
-        // Don't create an answer for empty submissions
         if (!userAnswerContent || userAnswerContent.trim() === "") {
           return null;
         }
@@ -91,7 +77,6 @@ export async function POST(req) {
           }
         }
 
-        // Create the Answer Document
         return Answer.create({
           practiceSession: practiceSession._id,
           question: questionId,
@@ -104,14 +89,11 @@ export async function POST(req) {
       }
     );
 
-    // We filter out any null promises from skipped questions
     await Promise.all(answerProcessingPromises.filter((p) => p !== null));
 
-    // --- Finalize the Session ---
     practiceSession.ended_at = new Date();
     await practiceSession.save();
 
-    // --- Send Response (No changes needed) ---
     return NextResponse.json(
       {
         message: "Practice Session submitted successfully!",

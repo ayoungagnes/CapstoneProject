@@ -1,61 +1,81 @@
-export default async function ReadingPageDetail({ params }) {
-  // Await params before destructuring
-  const { id } = await params;
+"use client";
 
-  const { connectToDatabase } = await import("@/app/lib/mongoose");
-  const { QuestionMaterial } = await import("@/app/lib/models/QuestionMaterial");
-  const { QuestionGroup } = await import("@/app/lib/models/QuestionGroup");
-  const { Question } = await import("@/app/lib/models/Question");
-  const ReadingMaterialQuestion = (await import("@/app/components/reading/readingMaterialQuestion")).default;
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Box, CircularProgress, Alert, Container } from "@mui/material";
+import * as React from "react";
 
-  await connectToDatabase();
+// Your original component that displays the material
+import ReadingMaterialQuestion from "@/app/components/reading/readingMaterialQuestion";
 
-  const material = await QuestionMaterial.findById(id).lean();
-  const groups = await QuestionGroup.find({ questionMaterial: id }).sort("order").lean();
-  const groupIds = groups.map((g) => g._id);
-  const questions = await Question.find({ questionGroup: { $in: groupIds } }).lean();
+export default function ReadingPracticePage({ params }) {
+  const { id } = React.use(params);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  const grouped = groups.map((group) => ({
-    ...group,
-    questions: questions.filter(
-      (q) => q.questionGroup.toString() === group._id.toString()
-    ),
-  }));
+  // State for holding the data
+  const [material, setMaterial] = useState(null);
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Serialize the data to remove MongoDB-specific properties
-  const serializedMaterial = {
-    _id: material._id.toString(),
-    title: material.title,
-    content: material.content,
-    type: material.type,
-    section: material.section,
-    subtitle: material.subtitle,
-    instruction: material.instruction,
-    paragraphs: material.paragraphs?.map(paragraph => ({
-      _id: paragraph._id.toString(),
-      label: paragraph.label,
-      content: paragraph.content,
-    })) || [],
-    createdAt: material.createdAt?.toISOString(),
-    updatedAt: material.updatedAt?.toISOString(),
-  };
+  // Effect to handle authentication
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/api/auth/signin"); // Redirect to login page
+    }
+  }, [status, router]);
 
-  const serializedGroups = grouped.map((group) => ({
-    _id: group._id.toString(),
-    instruction: group.instruction,
-    questionType: group.questionType,
-    order: group.order,
-    questionMaterial: group.questionMaterial.toString(),
-    questions: group.questions.map((q) => ({
-      _id: q._id.toString(),
-      content: q.content,
-      questionGroup: q.questionGroup.toString(),
-      order: q.order,
-      correctAnswer: q.correctAnswer,
-      options: q.options,
-      createdAt: q.createdAt?.toISOString(),
-      updatedAt: q.updatedAt?.toISOString(),
-    })),
-  }));
-  return <ReadingMaterialQuestion material={serializedMaterial} groups={serializedGroups} />;
+  // Effect to fetch data from the new API route
+  useEffect(() => {
+    // Only fetch if the user is authenticated
+    if (status === "authenticated") {
+      const fetchMaterial = async () => {
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/practice/reading/${id}`);
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to fetch data");
+          }
+
+          const data = await response.json();
+          setMaterial(data.material);
+          setGroups(data.groups);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchMaterial();
+    }
+  }, [id, status]); // Dependency array includes 'status'
+
+  // Loading State
+  if (loading || status === "loading") {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
+  // Render the component once data is successfully fetched
+  if (material) {
+    return <ReadingMaterialQuestion material={material} groups={groups} />;
+  }
+  return null;
 }
