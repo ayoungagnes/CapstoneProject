@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     }
 
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
 
     // Fetch the session and all its related data for display
     const practiceSession = await PracticeSession.findById(id)

@@ -21,37 +21,42 @@ export async function GET(request) {
     const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
     const skip = (page - 1) * limit;
 
-    // Fetch sessions and populate all data needed for the calculation
     const sessions = await PracticeSession.find({ user: session.user.id })
       .populate({
         path: "questionGroups",
         populate: { path: "questions", model: "Question" },
       })
-      .populate("answers") // Ensure answers are populated
+      .populate("answers")
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
-      .limit(limit)
-      .lean();
+      .limit(limit);
 
-    const totalCount = await PracticeSession.countDocuments({ user: session.user.id });
+    const totalCount = await PracticeSession.countDocuments({
+      user: session.user.id,
+    });
 
-    // Process each session asynchronously to calculate its score
+    // Process each session asynchronously to calculate its rich score object
     const processedSessions = await Promise.all(
-      sessions.map(async (session) => {
-        const { totalCorrect, totalQuestions, score } = await calculateSessionResults(session);
+      sessions.map(async (sessionDoc) => {
+        // Use our powerful helper on each session
+        const scoreResults = await calculateSessionResults(sessionDoc);
+
+        // Convert Mongoose doc to a plain object for modification
+        const sessionObj = sessionDoc.toObject();
+
         return {
-          _id: session._id,
-          started_at: session.started_at,
-          ended_at: session.ended_at,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          totalQuestions,
-          correctAnswers: totalCorrect,
-          score,
-          questionGroups: (session.questionGroups || []).map((group) => ({
+          _id: sessionObj._id,
+          started_at: sessionObj.started_at,
+          ended_at: sessionObj.ended_at,
+          createdAt: sessionObj.createdAt,
+          updatedAt: sessionObj.updatedAt,
+          totalQuestions: scoreResults.totalQuestions,
+          score: scoreResults,
+          questionGroups: (sessionObj.questionGroups || []).map((group) => ({
             _id: group._id,
             instruction: group.instruction,
             questionType: group.questionType,
+            section: group.section,
           })),
         };
       })
@@ -74,6 +79,9 @@ export async function GET(request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching practice sessions:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

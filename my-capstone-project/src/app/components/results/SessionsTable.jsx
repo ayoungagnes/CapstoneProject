@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Box,
   Typography,
@@ -31,18 +33,6 @@ const formatDate = (dateString) => {
   });
 };
 
-// Helper function to get score chip styles
-const getScoreChip = (score) => {
-  let color = "default";
-  if (score >= 80) color = "success";
-  else if (score >= 60) color = "warning";
-  else if (score >= 0) color = "error";
-
-  return (
-    <Chip label={`${score}%`} color={color} size="small" variant="outlined" />
-  );
-};
-
 export default function SessionsTable({
   sessions,
   sortBy,
@@ -65,8 +55,8 @@ export default function SessionsTable({
                 Date
               </TableSortLabel>
             </TableCell>
-            <TableCell align="center">Questions</TableCell>
-            <TableCell align="center">Score</TableCell>
+            <TableCell align="center">Section</TableCell>
+            <TableCell align="center">Overall Band</TableCell>
             <TableCell>Question Types</TableCell>
             <TableCell align="center">Actions</TableCell>
           </TableRow>
@@ -81,8 +71,16 @@ export default function SessionsTable({
               <TableCell component="th" scope="row">
                 {formatDate(session.createdAt)}
               </TableCell>
-              <TableCell align="center">{session.totalQuestions}</TableCell>
-              <TableCell align="center">{getScoreChip(session.score)}</TableCell>
+              <TableCell align="center" sx={{ textTransform: 'capitalize' }}>
+                {/* Display the section type, e.g., "Writing" or "Reading" */}
+                {session.questionGroups[0]?.section || 'N/A'}
+              </TableCell>
+              <TableCell align="center">
+                <Typography variant="h6" component="span" fontWeight="bold">
+                  {/* Access the overallBandScore from the nested score object */}
+                  {session.score?.overallBandScore?.toFixed(1) || 'N/A'}
+                </Typography>
+              </TableCell>
               <TableCell>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                   {session.questionGroups.map((group) => (

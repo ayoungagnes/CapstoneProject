@@ -1,6 +1,6 @@
 import { Question } from "@/app/lib/models/Question";
 import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
-import { getReadingBandScore } from "./ielts-bands";
+import { convertRawScoreToReadingBand } from "./ielts-bands";
 
 /**
  * Compares a user's answer with the correct answer based on question type.
@@ -43,15 +43,14 @@ export function compareAnswers(userAnswer, correctAnswer, questionType) {
 }
 
 /**
- * Calculates the score and statistics for a given practice session.
+ * Calculates a unified 9-band score for a session..
  * This function assumes that the practiceSession object has its related
  * data (questionGroups, questions, and answers) populated.
  * @param {object} practiceSession The Mongoose document for the practice session.
  * @returns {Promise<{totalCorrect: number, totalQuestions: number, score: number}>}
  */
 export async function calculateSessionResults(practiceSession) {
-  // Populate necessary data
-  if (!practiceSession.answers) await practiceSession.populate('answers');
+  if (!practiceSession.answers) await practiceSession.populate("answers");
   if (!practiceSession.questionGroups[0].questions) {
     await practiceSession.populate({
       path: "questionGroups",
@@ -66,25 +65,28 @@ export async function calculateSessionResults(practiceSession) {
 
   let totalQuestions = 0;
 
-  // --- START OF NEW LOGIC ---
   for (const group of practiceSession.questionGroups) {
     totalQuestions += group.questions.length;
-    const section = group.section; // 'reading' or 'writing'
+    const section = group.section;
 
-    if (section === 'reading') {
-      // For reading, we must compare answers to find the number of correct ones
+    if (section === "reading") {
       await Question.populate(group.questions, { path: "gradingKey" });
       sectionScores.reading.total += group.questions.length;
       for (const question of group.questions) {
         const userAnswer = practiceSession.answers.find(
           (a) => a.question.toString() === question._id.toString()
         );
-        if (compareAnswers(userAnswer?.content, question.gradingKey?.correctAnswer, group.questionType)) {
+        if (
+          compareAnswers(
+            userAnswer?.content,
+            question.gradingKey?.correctAnswer,
+            group.questionType
+          )
+        ) {
           sectionScores.reading.achieved++;
         }
       }
-    } else if (section === 'writing') {
-      // For writing, the score is already on the answer document
+    } else if (section === "writing") {
       const writingAnswer = practiceSession.answers.find(
         (a) => a.question.toString() === group.questions[0]._id.toString()
       );
@@ -94,23 +96,35 @@ export async function calculateSessionResults(practiceSession) {
     }
   }
 
-  // Convert reading's raw score to a band score
+  // --- THIS IS THE KEY LOGIC CHANGE ---
+  // Convert reading's raw score to a band score using the new proportional logic.
   if (sectionScores.reading.total > 0) {
-    sectionScores.reading.band = getReadingBandScore(sectionScores.reading.achieved);
+    sectionScores.reading.band = convertRawScoreToReadingBand(
+      sectionScores.reading.achieved,
+      sectionScores.reading.total // Pass the total questions for accurate scaling
+    );
   }
+  // --- END OF CHANGE ---
 
-  // Calculate overall band score (average of the sections that were practiced)
-  const bandScores = Object.values(sectionScores).filter(s => s.total > 0).map(s => s.band);
-  const overallBandScore = bandScores.length > 0
-    ? (bandScores.reduce((a, b) => a + b, 0) / bandScores.length).toFixed(1)
-    : 0;
+  // Calculate overall band score (this logic remains the same and is now correct)
+  const bandScores = Object.values(sectionScores)
+    .filter((s) => s.total > 0)
+    .map((s) => s.band);
+  const overallBandScore =
+    bandScores.length > 0
+      ? bandScores.reduce((a, b) => a + b, 0) / bandScores.length
+      : 0;
+
+  // We round the final average to the nearest 0.5, as per official IELTS rules.
+  const roundedOverallBand = (Math.round(overallBandScore * 2) / 2).toFixed(1);
 
   return {
-    overallBandScore: parseFloat(overallBandScore),
+    overallBandScore: parseFloat(roundedOverallBand),
     readingBandScore: sectionScores.reading.band,
     writingBandScore: sectionScores.writing.band,
     readingCorrect: sectionScores.reading.achieved,
     readingTotal: sectionScores.reading.total,
+    writingTotal: sectionScores.writing.total, // Pass this for the summary card
     totalQuestions,
   };
 }

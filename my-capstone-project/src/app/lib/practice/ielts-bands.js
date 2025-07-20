@@ -16,18 +16,28 @@ const readingBandMap = {
 };
 
 /**
- * Converts a raw score for a 40-question reading test into an IELTS band.
  * @param {number} correctAnswers - The number of correct answers.
+ * @param {number} totalQuestions - The total number of questions in the test.
  * @returns {number} The corresponding IELTS band score.
  */
-export function getReadingBandScore(correctAnswers) {
-  if (correctAnswers <= 0) return 0;
-  if (correctAnswers >= 40) return 9.0;
-  
-  // Find the closest score in the map if an exact match isn't found
-  let score = correctAnswers;
-  while (!readingBandMap[score] && score > 0) {
-    score--;
+export function convertRawScoreToReadingBand(correctAnswers, totalQuestions) {
+  // Guard against division by zero
+  if (totalQuestions === 0) return 0;
+
+  let scaledScore = correctAnswers;
+
+  // If the test was not a full 40 questions, scale the score proportionally.
+  if (totalQuestions !== 40) {
+    // Formula: (Correct / Total) * 40
+    scaledScore = Math.round((correctAnswers / totalQuestions) * 40);
   }
-  return readingBandMap[score] || 0;
+
+  // Now, use the scaled score to look up the band.
+  if (scaledScore <= 0) return 0;
+  if (scaledScore >= 40) return 9.0;
+  let scoreToLookup = scaledScore;
+  while (!readingBandMap[scoreToLookup] && scoreToLookup > 0) {
+    scoreToLookup--;
+  }
+  return readingBandMap[scoreToLookup] || 0;
 }

@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 
+// Adjust these paths if your folder structure is different
 import ResultsHeader from "@/app/components/results/ResultHeader";
 import SummaryStatistics from "@/app/components/results/SummaryStatistics";
 import SessionsTable from "@/app/components/results/SessionsTable";
@@ -31,14 +32,6 @@ export default function ResultsPage() {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/api/auth/signin");
-    }
-  }, [status, router]);
-
-  // Fetch sessions
   const fetchSessions = useCallback(
     async (page = 1) => {
       if (!session) return;
@@ -51,6 +44,7 @@ export default function ResultsPage() {
           sortOrder,
         });
 
+        // The API route for all results should be updated to return the new score object
         const response = await fetch(`/api/practice/results?${params}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -70,85 +64,54 @@ export default function ResultsPage() {
   );
 
   useEffect(() => {
-    fetchSessions(1);
-  }, [fetchSessions]);
-
-  // Handle page change
-  const handlePageChange = (event, newPage) => {
-    fetchSessions(newPage);
-  };
-
-  // Handle sort change
-  const handleSortChange = (newSortBy) => {
-    const newSortOrder =
-      sortBy === newSortBy && sortOrder === "desc" ? "asc" : "desc";
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-  };
-
-  // Handle viewing a session's results
-  const handleViewResult = (id) => {
-    router.push(`/practice/results/${id}`);
-  };
-
-  // Handle deleting a session
-  const handleDeleteSession = async (id) => {
-    // User confirmation
-    if (!window.confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-      return;
+    if(session) {
+        fetchSessions(1);
     }
+  }, [session, fetchSessions]);
 
+  const handlePageChange = (event, newPage) => fetchSessions(newPage);
+  const handleSortChange = (newSortBy) => {
+    const newSortOrder = sortBy === newSortBy && sortOrder === "desc" ? "asc" : "desc";
+    setSortBy(newSortOrder);
+    setSortBy(newSortBy);
+  };
+  const handleViewResult = (id) => router.push(`/practice/results/${id}`);
+  const handleDeleteSession = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this session?")) return;
     try {
-      const response = await fetch(`/api/practice/results/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete the session.");
-      }
-
-      // Refresh the list of sessions to reflect the deletion
+      await fetch(`/api/practice/results/${id}`, { method: "DELETE" });
       fetchSessions(pagination.currentPage);
     } catch (err) {
-      console.error("Deletion error:", err);
       setError(err.message || "Could not delete the session.");
     }
   };
 
-  // Loading and authentication checks
   if (status === "loading") {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress size={60} />
-      </Box>
-    );
+    return <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh"><CircularProgress size={60} /></Box>;
   }
+  if (!session) return null;
 
-  if (!session) {
-    return null; // Will be redirected
-  }
-
-  // Calculate average score safely
-  const averageScore =
-    sessions.length > 0
-      ? Math.round(
-          sessions.reduce((acc, s) => acc + (s.score || 0), 0) / sessions.length
-        )
+  // --- START OF SCORE CALCULATION FIX ---
+  // Calculate average BAND score safely
+  const validSessions = sessions.filter(s => s.score && typeof s.score.overallBandScore === 'number');
+  console.log(sessions);
+  const averageBandScore =
+    validSessions.length > 0
+      ? validSessions.reduce((acc, s) => acc + s.score.overallBandScore, 0) / validSessions.length
       : 0;
+  // --- END OF SCORE CALCULATION FIX ---
+
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <ResultsHeader />
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
+      {/* Pass the new averageBandScore prop */}
       <SummaryStatistics
         totalCount={pagination.totalCount}
-        averageScore={averageScore}
+        averageBandScore={averageBandScore}
       />
 
       <Paper sx={{ width: "100%", mb: 2 }}>
@@ -159,15 +122,9 @@ export default function ResultsPage() {
         </Box>
 
         {loading && sessions.length === 0 ? (
-          <Box display="flex" justifyContent="center" py={10}>
-             <CircularProgress />
-          </Box>
+          <Box display="flex" justifyContent="center" py={10}><CircularProgress /></Box>
         ) : sessions.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 8 }}>
-            <Typography variant="h6" color="text.secondary">
-              No practice results found.
-            </Typography>
-          </Box>
+          <Box sx={{ textAlign: "center", py: 8 }}><Typography variant="h6" color="text.secondary">No practice results found.</Typography></Box>
         ) : (
           <SessionsTable
             sessions={sessions}
