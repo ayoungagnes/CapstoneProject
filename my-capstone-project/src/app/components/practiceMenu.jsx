@@ -30,7 +30,7 @@ export default function PracticeMenu() {
       onMouseLeave={delayedClose}
       sx={{ display: "inline-block", position: "relative" }}
     >
-      <Button id="practice-btn" aria-controls={open ? "practice-menu" : undefined} aria-expanded={open} onClick={() => router.push("/practice")}>
+      <Button id="practice-btn" aria-controls={open ? "practice-menu" : undefined} aria-expanded={open}>
         Practice
       </Button>
 

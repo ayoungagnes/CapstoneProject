@@ -28,11 +28,6 @@ export async function POST() {
     // 1. Connect to MongoDB before performing any DB operations
     await connectToDatabase();
 
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // 2. Use OpenAI to generate a writing task using the structured prompt
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-nano-2025-04-14", // Use a cost-efficient model that supports JSON formatting
