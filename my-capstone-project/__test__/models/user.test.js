@@ -1,4 +1,3 @@
-// __tests__/models/user.test.js
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import User from '@/app/lib/models/User';
