@@ -1,9 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectToDatabase } from "@/app/lib/mongoose";
-import User from "@/app/lib/models/User";
-import bcrypt from "bcryptjs";
+import { authenticateUser } from "@/app/lib/services/authService";
 
+// NextAuth configuration
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -12,46 +11,37 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        await connectToDatabase();
-
-        const user = await User.findOne({ email: credentials.email });
-        if (!user) throw new Error("No user found");
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isPasswordValid) throw new Error("Invalid password");
-
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-        };
-      },
+      // Delegate to your service layer
+      authorize: authenticateUser,
     }),
   ],
+
+  // Custom sign‑in page
   pages: {
     signIn: "/login",
   },
+
+  // Use JWT sessions
   session: {
     strategy: "jwt",
   },
+
+  // Attach user ID into token and session
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
+      if (user) token.id = user.id;
       return token;
     },
-    // Include user ID in session object
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-      }
+      if (token) session.user.id = token.id;
       return session;
     },
   },
+
+  // Cryptographic secret for JWT/cookies
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+// Export NextAuth handler for both GET and POST
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
