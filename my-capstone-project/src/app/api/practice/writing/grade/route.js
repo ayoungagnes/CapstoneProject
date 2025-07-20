@@ -4,8 +4,9 @@ import { connectToDatabase } from "@/app/lib/mongoose";
 import { Answer } from "@/app/lib/models/Answer";
 import { Question } from "@/app/lib/models/Question";
 import { WritingFeedback } from "@/app/lib/models/WritingFeedback";
+import { getServerSession } from "next-auth/next";
 
-// This is an even more critical prompt. It defines the rubric for the AI.
+// It defines the rubric for the AI.
 const gradingSystemPrompt = `
   You are a highly experienced IELTS examiner. Your task is to grade a student's Writing Task 2 essay.
 
@@ -29,13 +30,18 @@ const gradingSystemPrompt = `
 `;
 
 export async function POST(request) {
-  // Authentication is vital here
-  // const session = await getServerSession(authOptions); ...
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { answerId } = await request.json();
     if (!answerId) {
-      return NextResponse.json({ error: "Answer ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Answer ID is required" },
+        { status: 400 }
+      );
     }
 
     await connectToDatabase();
@@ -56,7 +62,7 @@ export async function POST(request) {
 
     // 3. Call the OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo", // Use the latest, most capable model for best results
+      model: "gpt-4-turbo",
       messages: [
         { role: "system", content: gradingSystemPrompt },
         { role: "user", content: userPrompt },
@@ -83,7 +89,6 @@ export async function POST(request) {
       message: "Grading complete!",
       grade,
     });
-
   } catch (error) {
     console.error("Error grading writing task:", error);
     return NextResponse.json(

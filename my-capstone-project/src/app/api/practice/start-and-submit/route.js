@@ -7,14 +7,17 @@ import { Answer } from "@/app/lib/models/Answer";
 import { Question } from "@/app/lib/models/Question";
 
 export async function POST(request) {
+  // Step 0: Check if the user is logged in
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    // Step 1: Extract questionId and user's answer from the request body
     const { questionId, answerContent } = await request.json();
 
+    // Step 2: Make sure both fields are provided
     if (!questionId || !answerContent) {
       return NextResponse.json(
         { error: "Question ID and answer content are required" },
@@ -22,41 +25,47 @@ export async function POST(request) {
       );
     }
 
+    // Step 3: Connect to the MongoDB database
     await connectToDatabase();
 
-    // Step 1: Create the PracticeSession
+    // Step 4: Create a new PracticeSession document
+    // This represents the session for this one question
     const newPracticeSession = new PracticeSession({
       user: session.user.id,
-      // Find the question to get its parent group
-      questionGroups: [(await Question.findById(questionId)).questionGroup],
-      ended_at: new Date(), // Session ends immediately upon submission
+      questionGroups: [
+        // Find the question and extract the group it belongs to
+        (await Question.findById(questionId)).questionGroup,
+      ],
+      ended_at: new Date(), // We're ending the session immediately (one-shot session)
     });
-    await newPracticeSession.save();
+    await newPracticeSession.save(); // Save the session to the database
 
-    // Step 2: Create the Answer document
+    // Step 5: Create a new Answer document
+    // This stores the user's written response
     const newAnswer = new Answer({
       practiceSession: newPracticeSession._id,
       question: questionId,
       user: session.user.id,
       content: answerContent,
-      // Score and feedback will be populated by the grading service
+      // Note: score and feedback will be added later by the grading API
     });
-    await newAnswer.save();
+    await newAnswer.save(); // Save the answer to the database
 
-    // Step 3: Trigger AI grading asynchronously (fire-and-forget)
-    // We don't 'await' this call. The frontend doesn't need to wait for grading to complete.
+    // Step 6: Trigger AI grading for the answer
+    // We don't wait for it to finish – it happens in the background
     fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/practice/writing/grade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ answerId: newAnswer._id }),
     });
 
-    // Return the new session so the user can be redirected to the results page
+    // Step 7: Respond with the new session ID so the frontend can redirect the user
     return NextResponse.json({
       message: "Session submitted for grading.",
       sessionId: newPracticeSession._id,
     });
   } catch (error) {
+    // Handle any unexpected errors
     console.error("Error starting and submitting session:", error);
     return NextResponse.json(
       { error: "Internal server error" },

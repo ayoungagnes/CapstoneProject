@@ -8,22 +8,27 @@ import {
   compareAnswers,
 } from "@/app/lib/practice/scoreUtils";
 import { Question } from "@/app/lib/models/Question";
-import { QuestionGradingKey } from "@/app/lib/models/QuestionGradingKey";
 import { WritingFeedback } from "@/app/lib/models/WritingFeedback";
-import { Answer } from "@/app/lib/models/Answer";
-import { getReadingBandScore } from "@/app/lib/practice/ielts-bands";
 
+/**
+ * GET /api/practice/results/[id]
+ * Returns the detailed results of a single practice session for the logged-in user.
+ */
 export async function GET(request, { params }) {
   try {
+    // 1. Check if user is logged in
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // 2. Connect to the database
     await connectToDatabase();
     const { id } = await params;
 
-    // Fetch the session and all its related data for display
+    // 3. Load the practice session by ID, and include all related data:
+    // - questionGroups and their questions
+    // - answers and their optional writing feedback
     const practiceSession = await PracticeSession.findById(id)
       .populate({
         path: "questionGroups",
@@ -35,11 +40,12 @@ export async function GET(request, { params }) {
       .populate({
         path: "answers",
         populate: {
-          path: "detailedFeedback", // This is the virtual field on the Answer model
+          path: "detailedFeedback", // writing-specific feedback from AI or tutor
           model: WritingFeedback,
         },
       });
 
+    // 4. Handle cases where the session is not found or belongs to another user
     if (!practiceSession) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
@@ -47,10 +53,10 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Access Forbidden" }, { status: 403 });
     }
 
-    // Call the fixed helper function to get a rich score object
+    // 5. Compute overall band scores and section-level scores
     const scoreResults = await calculateSessionResults(practiceSession);
 
-    // This logic is still needed to prepare the detailed question-by-question view
+    // 6. Map answers by question ID for fast lookup when building the results
     const userAnswersMap = new Map(
       practiceSession.answers.map((answer) => [
         answer.question.toString(),
@@ -58,17 +64,20 @@ export async function GET(request, { params }) {
       ])
     );
 
+    // 7. Process each question group and prepare data for the frontend
     const processedGroups = [];
     for (const group of practiceSession.questionGroups) {
       const isWritingSection = group.section === "writing";
 
-      // Conditionally populate grading keys only for non-writing sections
+      // Only reading/listening questions need a gradingKey to check correctness
       if (!isWritingSection && group.questions?.length > 0) {
         await Question.populate(group.questions, { path: "gradingKey" });
       }
 
+      // Process each question in the group
       const processedQuestions = (group.questions || []).map((question) => {
         const userAnswer = userAnswersMap.get(question._id.toString());
+
         const result = {
           _id: question._id,
           content: question.content,
@@ -77,11 +86,13 @@ export async function GET(request, { params }) {
         };
 
         if (isWritingSection) {
+          // Writing answers include score and AI feedback
           result.score = userAnswer?.score || 0;
           result.maxScore = question.maxScore || 9;
           result.detailedFeedback =
             userAnswer?.detailedFeedback?.feedbackDetails || null;
         } else {
+          // Reading/listening answers include correctness check
           const correctAnswer = question.gradingKey?.correctAnswer;
           result.correctAnswer = correctAnswer || "N/A";
           result.isCorrect = compareAnswers(
@@ -90,6 +101,7 @@ export async function GET(request, { params }) {
             group.questionType
           );
         }
+
         return result;
       });
 
@@ -101,23 +113,27 @@ export async function GET(request, { params }) {
       });
     }
 
-    // The final result now contains the rich score object and the processed groups
+    // 8. Return all final result data back to the client
     const finalResult = {
       id: practiceSession._id,
       submittedAt: practiceSession.ended_at || practiceSession.createdAt,
-      score: scoreResults, // Pass the entire new results object
-      groups: processedGroups, // Pass the detailed groups for the body
+      score: scoreResults,
+      groups: processedGroups,
     };
 
     return NextResponse.json(finalResult);
   } catch (error) {
     console.error("--- CATCH BLOCK ERROR ---:", error);
+
+    // Handle common error types with appropriate HTTP status
     if (error.name === "CastError") {
       return NextResponse.json(
         { error: "Invalid Session ID format." },
         { status: 400 }
       );
     }
+
+    // Fallback for unexpected errors
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -125,9 +141,12 @@ export async function GET(request, { params }) {
   }
 }
 
+/**
+ * DELETE /api/practice/results/[id]
+ * Deletes a practice session if it belongs to the logged-in user.
+ */
 export async function DELETE(request, { params }) {
   try {
-    // 1. Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -136,36 +155,33 @@ export async function DELETE(request, { params }) {
     await connectToDatabase();
     const { id } = await params;
 
-    // 2. Find and delete the session
-    // Crucially, we match both the session ID and the user ID to ensure
-    // a user can only delete their own sessions.
+    // Only delete if the session belongs to the user
     const deletedSession = await PracticeSession.findOneAndDelete({
       _id: id,
       user: session.user.id,
     });
 
-    // 3. Validation
     if (!deletedSession) {
-      // This occurs if the session doesn't exist or doesn't belong to the user
       return NextResponse.json(
         { error: "Session not found or access denied" },
         { status: 404 }
       );
     }
 
-    // 4. Respond with success
     return NextResponse.json(
       { message: "Session deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
     console.error("Error deleting practice session:", error);
+
     if (error.name === "CastError") {
       return NextResponse.json(
         { error: "Invalid Session ID format." },
         { status: 400 }
       );
     }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
