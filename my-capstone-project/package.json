@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -23,9 +24,16 @@
     "swiper": "^11.2.10"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.0",
     "@eslint/eslintrc": "^3",
+    "@types/jest": "^30.0.0",
     "@types/node": "24.0.14",
+    "babel-jest": "^30.0.4",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5"
+    "eslint-config-next": "15.3.5",
+    "jest": "^30.0.4",
+    "mongodb-memory-server": "^10.1.4",
+    "node-mocks-http": "^1.17.2",
+    "ts-jest": "^29.4.0"
   }
 }

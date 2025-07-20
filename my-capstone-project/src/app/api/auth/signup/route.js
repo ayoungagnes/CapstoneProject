@@ -1,32 +1,15 @@
 import { connectToDatabase } from '@/app/lib/mongoose';
-import User from '@/app/lib/models/User';
-import bcrypt from 'bcryptjs';
+import { registerUser } from '@/app/lib/services/userService';
 
 export async function POST(request) {
   try {
     await connectToDatabase();
-    const { name, email, password, goal_score } = await request.json();
-
-    // Check for existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return Response.json({ error: "User already exists" }, { status: 400 });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      goal_score: goal_score || 0,
-    });
+    const body = await request.json();
+    const newUser = await registerUser(body);
 
     return Response.json({ message: "User created", user: newUser }, { status: 201 });
   } catch (err) {
-    console.error(err);
-    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+    const status = err.message === 'User already exists' ? 400 : 500;
+    return Response.json({ error: err.message }, { status });
   }
 }
