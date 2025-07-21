@@ -10,7 +10,7 @@ import { getServerSession } from "next-auth/next";
 const generationPrompt = `
   You are an expert IELTS test creator. Your task is to generate a new, original IELTS Writing Task 2 question.
 
-  The question should be on a common IELTS topic such as technology, environment, education, or society.
+  The question should be on a common IELTS topic.
 
   Please provide the output in a JSON object with two keys:
   1. "instruction": A brief instruction for the user.
@@ -30,7 +30,7 @@ export async function POST() {
 
     // 2. Use OpenAI to generate a writing task using the structured prompt
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-nano-2025-04-14", // Use a cost-efficient model that supports JSON formatting
+      model: "gpt-4.1-nano-2025-04-14",
       messages: [{ role: "system", content: generationPrompt }],
       response_format: { type: "json_object" }, // Ensures OpenAI responds with strict JSON
     });
