@@ -37,7 +37,7 @@ describe('QuestionGroup Model', () => {
   test('fails when required fields are missing', async () => {
     let error;
     try {
-      await QuestionGroup.create({}); // everything missing
+      await QuestionGroup.create({});
     } catch (err) {
       error = err;
     }
@@ -52,8 +52,8 @@ describe('QuestionGroup Model', () => {
   test('rejects invalid enum values', async () => {
     const data = {
       instruction: 'Invalid values test.',
-      questionType: 'drag_and_drop', // ❌ not in enum
-      section: 'listening', // ❌ not in enum
+      questionType: 'drag_and_drop',
+      section: 'listening',
     };
 
     await expect(QuestionGroup.create(data)).rejects.toThrow(mongoose.Error.ValidationError);

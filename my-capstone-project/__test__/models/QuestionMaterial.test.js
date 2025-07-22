@@ -33,7 +33,7 @@ describe('QuestionMaterial Model', () => {
 
     expect(material).toBeDefined();
     expect(material.title).toBe('Technology and Innovation');
-    expect(material.type).toBe('text'); // default
+    expect(material.type).toBe('text');
     expect(material.paragraphs.length).toBe(2);
     expect(material.paragraphs[0].label).toBe('A');
   });

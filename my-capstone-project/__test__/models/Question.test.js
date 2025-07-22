@@ -29,7 +29,7 @@ describe('Question Model', () => {
 
     expect(question).toBeDefined();
     expect(question.content).toBe('What is the capital of France?');
-    expect(question.difficulty).toBe(1); // default value
+    expect(question.difficulty).toBe(1);
   });
 
   test('fails to create Question without required fields', async () => {
@@ -50,7 +50,7 @@ describe('Question Model', () => {
     const invalidData = {
       questionGroup: new mongoose.Types.ObjectId(),
       content: 'Invalid difficulty',
-      difficulty: 6, // invalid: > 5
+      difficulty: 6,
     };
 
     await expect(Question.create(invalidData)).rejects.toThrow(mongoose.Error.ValidationError);

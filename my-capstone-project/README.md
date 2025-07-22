@@ -14,6 +14,7 @@ A full-stack web application designed to help users prepare for language profici
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
 - [Core Architectural Concepts](#core-architectural-concepts)
+- [Jest Test](#jest-test)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -59,8 +60,11 @@ The project's architecture is designed for scalability and maintainability, espe
 
 4.  **Component-Driven UI**: The frontend is built with a clear separation of concerns. "Container" components (pages) handle data fetching and state management, while "Presentational" components (in the `components` directory) are responsible for rendering the UI based on props.
 
-## Database Schema
-
+## Jest test
+- Test suite canbe run using the following command
+```
+npm test
+```
 
 ## Project Structure
 

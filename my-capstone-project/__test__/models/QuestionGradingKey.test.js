@@ -43,7 +43,7 @@ describe('QuestionGradingKey Model', () => {
   test('fails without required fields', async () => {
     let error;
     try {
-      await QuestionGradingKey.create({ correctAnswer: 'A' }); // missing questionId
+      await QuestionGradingKey.create({ correctAnswer: 'A' });
     } catch (err) {
       error = err;
     }
@@ -58,7 +58,7 @@ describe('QuestionGradingKey Model', () => {
       QuestionGradingKey.create({
         questionId: new mongoose.Types.ObjectId(),
         correctAnswer: 'D',
-        scoringType: 'essay', // ❌ not allowed
+        scoringType: 'essay',
       })
     ).rejects.toThrow(mongoose.Error.ValidationError);
   });
