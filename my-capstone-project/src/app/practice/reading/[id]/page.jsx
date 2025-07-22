@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Box, CircularProgress, Alert, Container } from "@mui/material";
 import * as React from "react";
 
-// Your original component that displays the material
 import ReadingMaterialQuestion from "@/app/components/reading/readingMaterialQuestion";
 
 export default function ReadingPracticePage({ params }) {
@@ -27,9 +26,7 @@ export default function ReadingPracticePage({ params }) {
     }
   }, [status, router]);
 
-  // Effect to fetch data from the new API route
   useEffect(() => {
-    // Only fetch if the user is authenticated
     if (status === "authenticated") {
       const fetchMaterial = async () => {
         try {

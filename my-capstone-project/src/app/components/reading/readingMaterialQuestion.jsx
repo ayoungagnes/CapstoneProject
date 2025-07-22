@@ -27,13 +27,11 @@ export default function ReadingMaterialQuestion({ material, groups }) {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
   };
 
-  // --- THIS IS THE UPDATED SUBMISSION HANDLER ---
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null); // Clear previous errors
 
     // 1. Extract the IDs from the full 'groups' array prop.
-    // This is the "snapshot" of the test structure.
     const questionGroupIds = groups.map(group => group._id);
 
     // 2. Construct the new payload with both the answers and the group IDs.
@@ -70,7 +68,6 @@ export default function ReadingMaterialQuestion({ material, groups }) {
     }
   };
 
-  // The rest of the component's JSX remains the same.
   return (
     <Box maxWidth="md" mx="auto" py={4}>
       <Typography variant="h4" gutterBottom>

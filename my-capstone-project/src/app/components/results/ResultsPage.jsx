@@ -93,7 +93,6 @@ export default function ResultsPage({ id }) {
   }
 
   // Determine the type of practice session to link to.
-  // We check the 'section' of the first group.
   let tryAnotherLink = "/"
   let tryAnotherText = "Try Another Practice";
   console.log(results.score)

@@ -12,7 +12,6 @@ import {
   Typography,
 } from "@mui/material";
 
-// Adjust these paths if your folder structure is different
 import ResultsHeader from "@/app/components/results/ResultHeader";
 import SummaryStatistics from "@/app/components/results/SummaryStatistics";
 import SessionsTable from "@/app/components/results/SessionsTable";
@@ -44,7 +43,6 @@ export default function ResultsPage() {
           sortOrder,
         });
 
-        // The API route for all results should be updated to return the new score object
         const response = await fetch(`/api/practice/results?${params}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -91,15 +89,12 @@ export default function ResultsPage() {
   }
   if (!session) return null;
 
-  // --- START OF SCORE CALCULATION FIX ---
-  // Calculate average BAND score safely
   const validSessions = sessions.filter(s => s.score && typeof s.score.overallBandScore === 'number');
   console.log(sessions);
   const averageBandScore =
     validSessions.length > 0
       ? validSessions.reduce((acc, s) => acc + s.score.overallBandScore, 0) / validSessions.length
       : 0;
-  // --- END OF SCORE CALCULATION FIX ---
 
 
   return (
@@ -108,7 +103,6 @@ export default function ResultsPage() {
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {/* Pass the new averageBandScore prop */}
       <SummaryStatistics
         totalCount={pagination.totalCount}
         averageBandScore={averageBandScore}

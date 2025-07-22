@@ -4,8 +4,6 @@ import { Box, Typography, Card, CardContent, Chip, Grid, Divider } from "@mui/ma
 import { Assessment, MenuBook, DriveFileRenameOutline } from "@mui/icons-material";
 
 export default function ScoreSummaryCard({ results }) {
-  // The 'results' prop now contains our new score object:
-  // e.g., results.score = { overallBandScore: 7.5, readingBandScore: 8.0, ... }
   const scoreData = results.score;
 
   // Render nothing if scoreData is not available

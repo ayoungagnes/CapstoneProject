@@ -38,12 +38,9 @@ export default function WritingPracticePage() {
         throw new Error(data.error || "Failed to generate a question.");
       }
 
-      // --- ROBUSTNESS CHECK IS HERE ---
-      // Before trying to use the data, make sure it has what we need.
       if (!data.question || !data.questionGroup) {
         throw new Error("Received an invalid response from the server.");
       }
-      // --- END OF CHECK ---
 
       setQuestionData({
         groupId: data.questionGroup._id,
@@ -80,7 +77,7 @@ export default function WritingPracticePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          questionId: questionData.questionId, // Now safely accessing the state
+          questionId: questionData.questionId,
           answerContent: userAnswer,
         }),
       });
